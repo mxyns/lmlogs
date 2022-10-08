@@ -28,7 +28,7 @@ It contains the basic information the user wants to store.
 
 #### The `LML_DECLARE_LOG` macro
 ```C
-#define LML_DECLARE_LOG(PREFIX, TYPE, PREV_OPT, MEMSIZE_OPT, FIELDS...)
+#define LML_DECLARE_LOG(PREFIX, TYPE, PREV_OPT, MEMSIZE_OPT, CLEARABLE_OPT, FIELDS...)
 ```
 #### Example use: 
 ```C
@@ -171,12 +171,18 @@ If you don't want to use an option, just put `LML_NO_OPT` instead of the option'
 ### Available options
 #### The `LML_PREV_OPT` option
 Makes the log stack a double linked list, allowing the user to iterate manually through the log stack in both directions.
-Adds a `struct PREFIX_stack *prev` field to the `struct PREFIX_stack` structure and a bit of logic during the `PREFIX_log_expand` that adds a new stack to the log.
+Adds a `struct PREFIX_stack *prev` field to the `struct PREFIX_stack` structure and a bit of logic during the `PREFIX_log_expand(...)` that adds a new stack to the log.
 
 #### The `LML_RECORD_MEMSIZE_OPT` option
 Adds a `size_t alloc_size` field to the `struct PREFIX_log` structure. This fields contains the number of bytes allocated to this log instance.
-Adds a bit of code in the `PREFIX_log_expand` function and to the structure allocating functions aswell.
+Adds a bit of code in the `PREFIX_log_expand(...)` function and to the structure allocating functions aswell.
 
+#### The `LML_CLEAR_OPT` option
+Makes the log stack clearable without freeing memory for reuse after dumping.
+Adds a `struct PREFIX_stack *curr` field to the `struct PREFIX_log` that keeps track of which stack to insert into next. 
+Indeed, after a clear, a log can have multiple allocated stacks even though we're starting to write on the head stack again. 
+This means that with the `LML_CLEAR_OPT` the tail is not always the stack to insert new logs into.
+The user can clear a log using the `PREFIX_log_clear(struct PREFIX_log *log)` function.
 
 ## Demo and benchmark
 See the `main.c` file which compares the lmlogs performance against the basic approach of using fprintf whenever we have something to log.

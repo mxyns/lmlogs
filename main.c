@@ -12,7 +12,7 @@ enum EVENT_CODE {
     OUT
 };
 
-LML_DECLARE_LOG(lml, struct lml, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, {
+LML_DECLARE_LOG(lml, struct lml, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, LML_CLEAR_OPT, {
     size_t current_alloc_size;
     uint64_t timestamp;
     uint64_t data;
@@ -22,7 +22,7 @@ LML_DECLARE_LOG(lml, struct lml, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, {
 void lml_put_entry_to_file(struct lml_log *log, struct lml_stack *stack, size_t index, struct lml_entry* entry, void *file_extra) {
     FILE *file = (FILE *)file_extra;
     if (!(stack == log->head && index == 0)
-        && entry->current_alloc_size != ((index == 0 ? stack->prev : stack)->entries[(index == 0 ? stack->prev->stack_cap : index) - 1]).current_alloc_size) {
+        && entry->current_alloc_size == ((index == 0 ? stack->prev : stack)->entries[(index == 0 ? stack->prev->stack_cap : index) - 1]).current_alloc_size) {
             fprintf(file, "[-][%lu] event=%s, data=%lu\n", entry->timestamp, entry->event_code ? "IN" : "OUT", entry->data);
     } else {
         fprintf(file, "[%lu][%lu] event=%s, data=%lu\n", entry->current_alloc_size, entry->timestamp, entry->event_code ? "IN" : "OUT", entry->data);
@@ -31,7 +31,7 @@ void lml_put_entry_to_file(struct lml_log *log, struct lml_stack *stack, size_t 
 
 int main() {
 
-    uint64_t N = 1 << 20;
+    uint64_t N = 128;
     {
         struct timespec ts;
         FILE *naive_file = fopen("./naive.txt", "w");
@@ -55,10 +55,10 @@ int main() {
         LML_TIME(smart_duration, {
             for (uint64_t i = 0; i < N; i++) {
                 LML_TIME_FUNC(&ts);
-                lml_log_push(log, (struct lml_entry) {
+                struct lml_entry *entry = lml_log_push(log, (struct lml_entry) {
                         .current_alloc_size = 0,
                         .timestamp = ts.tv_sec * 1000000000 + ts.tv_nsec,
-                        .event_code = i%2?IN:OUT,
+                        .event_code = i % 2 == 0 ? IN : OUT,
                         .data = i
                 })->current_alloc_size = log->alloc_size;
             }
@@ -66,10 +66,37 @@ int main() {
         printf(LML_TIME_PFORMAT"\n", LML_TIME_PPARAMS(smart_duration));
 
         printf("Dumping %lu blocks\n", log->stack_count);
+        fprintf(smart_file, "==== AFTER INSERT ==== Dumping %lu blocks\n", log->stack_count);
         LML_TIME(smart_dump_duration, {
             lml_log_dump(log, lml_put_entry_to_file, (void *)smart_file);
         });
         printf(LML_TIME_PFORMAT"\n", LML_TIME_PPARAMS(smart_dump_duration));
+
+        lml_log_clear(log);
+        printf("Dumping %lu blocks\n", log->stack_count);
+        fprintf(smart_file, "==== AFTER CLEAR ==== Dumping %lu blocks\n", log->stack_count);
+        LML_TIME(cleared_smart_dump_duration, {
+            lml_log_dump(log, lml_put_entry_to_file, (void *)smart_file);
+        });
+
+        for (uint64_t i = 0; i < log->head->stack_cap + 1; i++) {
+            LML_TIME_FUNC(&ts);
+            lml_log_push(log, (struct lml_entry) {
+                                      .current_alloc_size = 0,
+                                      .timestamp = ts.tv_sec * 1000000000 + ts.tv_nsec,
+                                      .event_code = i%2?IN:OUT,
+                                      .data = i
+                              })->current_alloc_size = log->alloc_size;
+        }
+
+        printf(LML_TIME_PFORMAT"\n", LML_TIME_PPARAMS(cleared_smart_dump_duration));
+        printf("Dumping %lu blocks\n", log->stack_count);
+        fprintf(smart_file, "==== AFTER REINSERT ==== Dumping %lu blocks\n", log->stack_count);
+        LML_TIME(reinsert_cleared_smart_dump_duration, {
+            lml_log_dump(log, lml_put_entry_to_file, (void *)smart_file);
+        });
+        printf(LML_TIME_PFORMAT"\n", LML_TIME_PPARAMS(reinsert_cleared_smart_dump_duration));
+
 
         fclose(smart_file);
         lml_log_free(log);
