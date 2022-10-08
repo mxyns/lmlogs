@@ -67,7 +67,7 @@ int main() {
 
         printf("Dumping %lu blocks\n", log->stack_count);
         LML_TIME(smart_dump_duration, {
-            lml_log_dump(log, (void *)smart_file, lml_put_entry_to_file);
+            lml_log_dump(log, lml_put_entry_to_file, (void *)smart_file);
         });
         printf(LML_TIME_PFORMAT"\n", LML_TIME_PPARAMS(smart_dump_duration));
 

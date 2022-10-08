@@ -2,16 +2,16 @@
 // Created by Maxence Younsi on 07/10/22.
 //
 
+#ifndef LMLOGS_LML_LIB_H
+#define LMLOGS_LML_LIB_H
+
 #define LML_COND(bool, ...) LML_COND_##bool(__VA_ARGS__)
 #define LML_COND_0(...)
 #define LML_COND_1(...) __VA_ARGS__
 
-#ifndef LMLOGS_LML_LIB_H
-#define LMLOGS_LML_LIB_H
-
 #define LML_PREV_OPT 1
 #define LML_RECORD_MEMSIZE_OPT 1
-#define LML_NO_OPT
+#define LML_NO_OPT 0
 
 #define LML_DECLARE_LOG(PREFIX, TYPE, PREV_OPT, MEMSIZE_OPT, FIELDS...) \
 \
@@ -104,7 +104,7 @@ TYPE##_entry *PREFIX##_log_push(struct PREFIX##_log *log, TYPE##_entry entry) {\
     return &stack->entries[stack->stack_size++];\
 }\
 \
-void PREFIX##_log_dump(struct PREFIX##_log *log, void *extra, void (*consumer)(struct PREFIX##_log* log, struct PREFIX##_stack* stack, size_t index, TYPE##_entry *entry, void *extra)) {\
+void PREFIX##_log_dump(struct PREFIX##_log *log, void (*consumer)(struct PREFIX##_log* log, struct PREFIX##_stack* stack, size_t index, TYPE##_entry *entry, void *extra), void *extra) {\
 \
     struct PREFIX##_stack *stack = log->head;\
     do {\
