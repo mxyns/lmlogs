@@ -28,15 +28,15 @@ It contains the basic information the user wants to store.
 
 #### The `LML_DECLARE_LOG` macro
 ```C
-    #define LML_DECLARE_LOG(PREFIX, TYPE, PREV_OPT, MEMSIZE_OPT, FIELDS...)
+#define LML_DECLARE_LOG(PREFIX, TYPE, PREV_OPT, MEMSIZE_OPT, FIELDS...)
 ```
 #### Example use: 
 ```C
-    LML_DECLARE_LOG(myprefix, struct mystruct, LML_NO_OPT, LML_NO_OPT, {
-        uint64_t timestamp;
-        uint64_t data;
-        // etc ...
-    });
+LML_DECLARE_LOG(myprefix, struct mystruct, LML_NO_OPT, LML_NO_OPT, {
+    uint64_t timestamp;
+    uint64_t data;
+    // etc ...
+});
 ```
 
 #### What is happening here ?
@@ -56,12 +56,12 @@ NB : because the functions names are different for each type, we will, from now 
 
 #### The `PREFIX_log_new` function
 ```C
-    struct PREFIX_log *PREFIX_log_new(size_t stack_cap)
+struct PREFIX_log *PREFIX_log_new(size_t stack_cap)
 ```
 
 #### Example use
 ```C
-    struct myprefix_log* log = myprefix_log_new(4096);
+struct myprefix_log* log = myprefix_log_new(4096);
 ```
 Will allocate a log and a block of size 4096. This size represents the number of entries contained in a block and will be the capacity of the future blocks allocated when the first one is full.
 
@@ -70,23 +70,23 @@ Will allocate a log and a block of size 4096. This size represents the number of
 
 #### The `PREFIX_log_push` function
 ```C
-    TYPE_entry *PREFIX_log_push(struct PREFIX_log *log, TYPE_entry entry)
+TYPE_entry *PREFIX_log_push(struct PREFIX_log *log, TYPE_entry entry)
 ```
 
 #### Example use
 ```C
-    myprefix_log_push(log, (struct mystruct_entry) {
-                      .timestamp = 0,
-                      .data = 69
-              });
+myprefix_log_push(log, (struct mystruct_entry) {
+                  .timestamp = 0,
+                  .data = 69
+          });
 ```
 because this function returns a pointer to the copy of the struct given in the log, we can store the time after insertion like this:
 
 ```C
-    myprefix_log_push(log, (struct mystruct_entry) {
-                      .timestamp = 0,
-                      .data = 69
-              })->timestamp = some_function_giving_time();
+myprefix_log_push(log, (struct mystruct_entry) {
+                  .timestamp = 0,
+                  .data = 69
+          })->timestamp = some_function_giving_time();
 ```
 
 #### What is happening here ?
@@ -113,27 +113,27 @@ void PREFIX##_log_dump(
 
 Open a file
 ```C
-  FILE *dump_file = fopen("./dump.log", "w");
+FILE *dump_file = fopen("./dump.log", "w");
 ```
 
 Declare a stack entry consumer
 ```C
-    void put_entry_to_file(
-          struct myprefix_log *log, 
-          struct myprefix_stack *stack, 
-          size_t index, 
-          struct mystruct_entry* entry, 
-          void *file_extra
-    ) {
-        FILE *file = (FILE *)file_extra;
-        fprintf(file, "[%lu] data=%lu\n", entry->timestamp, entry->data);
-    }
+void put_entry_to_file(
+      struct myprefix_log *log, 
+      struct myprefix_stack *stack, 
+      size_t index, 
+      struct mystruct_entry* entry, 
+      void *file_extra
+) {
+    FILE *file = (FILE *)file_extra;
+    fprintf(file, "[%lu] data=%lu\n", entry->timestamp, entry->data);
+}
 
 ```
 
 Dump the log's content using the consumer
 ```C
-    myprefix_log_dump(log, put_entry_to_file, (void *)dump_file);
+myprefix_log_dump(log, put_entry_to_file, (void *)dump_file);
 ```
 
 #### What is happening here ?
@@ -153,12 +153,12 @@ This function is where the slower I/O part has been deferred. Dumping a big log 
 
 #### The `myprefix_log_free` function
 ```C
-    void myprefix_log_free(struct myprefix_log *log)
+void myprefix_log_free(struct myprefix_log *log)
 ```
 
 #### Example use
 ```C
-  lml_log_free(log);
+lml_log_free(log);
 ```
 
 Will free the entirety of the allocated memory for this log instance.
@@ -182,4 +182,3 @@ Adds a bit of code in the `PREFIX_log_expand` function and to the structure allo
 See the `main.c` file which compares the lmlogs performance against the basic approach of using fprintf whenever we have something to log.
 You can notice that the overall execution takes longer using lmlogs but msot importantly that the part where important CPU intensive code would be ran is considerably less impacted by lmlogs's memory logging system than by the basic approach. 
 Indeed, dumping could be done only at the end of the program's execution which is not something we need to be especially quick in most cases.
-
