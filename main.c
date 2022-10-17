@@ -12,7 +12,8 @@ enum EVENT_CODE {
     OUT
 };
 
-LML_DECLARE_LOG(lml, struct lml, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, LML_CLEAR_OPT, {
+LML_DECLARE_TYPE(lml, struct lml_entry, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, LML_CLEAR_OPT);
+LML_DEFINE_TYPE(lml, struct lml_entry, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, LML_CLEAR_OPT, {
     size_t current_alloc_size;
     uint64_t timestamp;
     uint64_t data;
@@ -29,7 +30,7 @@ void lml_put_entry_to_file(struct lml_log *log, struct lml_stack *stack, size_t 
     }
 }
 
-int main() {
+int main(void) {
 
     uint64_t N = 128;
     {
