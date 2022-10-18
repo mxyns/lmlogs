@@ -12,14 +12,19 @@ enum EVENT_CODE {
     OUT
 };
 
-LML_DECLARE_TYPE(lml, struct lml_entry, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, LML_CLEAR_OPT);
-LML_DEFINE_TYPE(lml, struct lml_entry, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, LML_CLEAR_OPT, {
+LML_DECLARE_ALL(lml, struct lml_entry, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, LML_CLEAR_OPT);
+
+LML_DEFINE_TYPES(lml, struct lml_entry, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, LML_CLEAR_OPT,  {
     size_t current_alloc_size;
     uint64_t timestamp;
     uint64_t data;
     enum EVENT_CODE event_code;
 });
 
+LML_DEFINE_FUNCS(lml, struct lml_entry, LML_PREV_OPT, LML_RECORD_MEMSIZE_OPT, LML_CLEAR_OPT);
+
+
+void lml_put_entry_to_file(struct lml_log *log, struct lml_stack *stack, size_t index, struct lml_entry* entry, void *file_extra);
 void lml_put_entry_to_file(struct lml_log *log, struct lml_stack *stack, size_t index, struct lml_entry* entry, void *file_extra) {
     FILE *file = (FILE *)file_extra;
     if (!(stack == log->head && index == 0)
@@ -51,7 +56,7 @@ int main(void) {
     {
         struct timespec ts;
 
-        FILE *smart_file = fopen("./smart.txt", "w");
+        FILE *smart_file = fopen("./smart.txt", "w+");
         struct lml_log* log = lml_log_new(4096*2);
         LML_TIME(smart_duration, {
             for (uint64_t i = 0; i < N; i++) {
